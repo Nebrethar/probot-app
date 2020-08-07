@@ -2,6 +2,11 @@
  * This is the main entrypoint to your Probot app
  * @param {import('probot').Application} app
  */
+const https = require('https');
+const { Octokit } = require("@octokit/rest");
+const octokit = new Octokit();
+var request = require('request');
+
 module.exports = app => {
   // Your code here
   app.log('Yay, the app was loaded!')
@@ -18,7 +23,7 @@ const events = [
     'pull_request_review_comment'
   ]*/
 
-  app.on('pull_request.opened', breako);
+  app.on('issue.opened', breako);
   async function breako(context) {
       try {
       const prnum = context.payload.pull_request.number;
@@ -32,7 +37,7 @@ const events = [
       }
   }
 
-  app.on('pull_request.assigned', receive);
+  app.on('issue.assigned', receive);
   async function receive(context) {
       try {
       context.github.issues.createComment(context.issue({ body: 'Assigned' }));
@@ -43,7 +48,7 @@ const events = [
       }
   }
 
-  app.on('pull_request.labeled', comment);
+  app.on('issue.labeled', comment);
   async function comment(context) {
       //app.log(context);
       lname = context.payload.label.name;
@@ -72,6 +77,52 @@ const events = [
         const url = "https://img.shields.io/badge/" + flavor + "?style=flat-square&labelColor=583586&&link=https://github.com/Nebrethar/probot-app/pull/" + prnum + "/&logo=data:image/svg+xml;base64,PHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmlld0JveD0iMCAwIDI1MCAyNTAiPgo8cGF0aCBmaWxsPSIjMUM5QkQ2IiBkPSJNOTcuMSw0OS4zYzE4LTYuNywzNy44LTYuOCw1NS45LTAuMmwxNy41LTMwLjJjLTI5LTEyLjMtNjEuOC0xMi4yLTkwLjgsMC4zTDk3LjEsNDkuM3oiLz4KPHBhdGggZmlsbD0iIzZBQzdCOSIgZD0iTTE5NC42LDMyLjhMMTc3LjIsNjNjMTQuOCwxMi4zLDI0LjcsMjkuNSwyNy45LDQ4LjVoMzQuOUMyMzYuMiw4MC4yLDIxOS45LDUxLjcsMTk0LjYsMzIuOHoiLz4KPHBhdGggZmlsbD0iI0JGOUNDOSIgZD0iTTIwNC45LDEzOS40Yy03LjksNDMuOS00OS45LDczLTkzLjgsNjUuMWMtMTMuOC0yLjUtMjYuOC04LjYtMzcuNS0xNy42bC0yNi44LDIyLjQKCWM0Ni42LDQzLjQsMTE5LjUsNDAuOSwxNjIuOS01LjdjMTYuNS0xNy43LDI3LTQwLjIsMzAuMS02NC4ySDIwNC45eiIvPgo8cGF0aCBmaWxsPSIjRDYxRDVGIiBkPSJNNTUuNiwxNjUuNkMzNS45LDEzMS44LDQzLjMsODguOCw3My4xLDYzLjVMNTUuNywzMy4yQzcuNSw2OS44LTQuMiwxMzcuNCwyOC44LDE4OEw1NS42LDE2NS42eiIvPgo8L3N2Zz4K";
         const badge = "[![badge-level-" + labeltext + "](" + url + ")](" + prnum + ")";
         context.github.issues.createComment(context.issue({ body: "Find your " + labeltext.toUpperCase() + " badge here: " + badge + "\n\`\`\`\nMARKDOWN " + badge + "\n\`\`\`"}));
+        app.log(context.github)
+        app.log("SET 2");
+        app.log(context)
+        app.log(context.payload.pull_request._links.commits.href)
+        const options = {
+          url: context.payload.pull_request._links.commits.href,
+          headers: {
+            'User-Agent': 'request'
+          }
+        };
+
+        /*
+        function callback(error, response, body) {
+          if (!error && response.statusCode == 200) {
+             const info = JSON.parse(body);
+             app.log(info[0]);
+           }
+         }
+
+        request(options, callback);
+        request(context.payload.pull_request._links.commits.href, function (error, response, body) {
+            if (!error && response.statusCode == 200) {
+                app.log(response)
+            } else {
+                app.log("ERROR FETCH");
+                app.log(response);
+                app.log(body)
+            }
+        })*/
+
+        /*
+        https.get("https://api.github.com/repos/Nebrethar/probot-app/pulls/" + prnum + "/commits", (resp) => {
+          let data = '';
+
+          resp.on('data', (chunk) => {
+            data += chunk;
+          });
+
+            resp.on('end', () => {
+            app.log(JSON.parse(data).explanation);
+          });
+
+        }).on("error", (err) => {
+          app.log("Error: " + err.message);
+        });
+        */
         context.github.issues.createComment(context.issue({ body: "A decision has been made by our moderation team. The issue will be closed now."}));
         context.github.issues.update(context.issue({state: 'closed'}))
       }
